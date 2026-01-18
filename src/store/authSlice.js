@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { axiosInstance } from "../lib/axios";
+import { axiosInstance } from "@/lib/axios";
 import toast from "react-hot-toast";
 
 export const login = createAsyncThunk(
@@ -52,20 +52,48 @@ export const checkAuth = createAsyncThunk(
   }
 );
 
+export const getProfile = createAsyncThunk(
+  "auth/getProfile",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await axiosInstance.get("/users/me/");
+      return res.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data || "Failed to fetch profile info",
+      );
+    }
+  },
+);
+
+export const getUsers = createAsyncThunk(
+  "auth/getUsers",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await axiosInstance.get("/users/");
+      return res.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || "Failed to fetch users");
+    }
+  },
+);
+
 const authSlice = createSlice({
   name: "auth",
   initialState: {
     authUser: null,
+    users: [],
     isLoggingIn: false,
     isSigningUp: false,
-    isCheckingAuth: true, 
+    isCheckingAuth: true,
+    isProfileLoading: false,
+    isUsersLoading: false,
   },
   reducers: {
     logout: (state) => {
       state.authUser = null;
-      localStorage.removeItem("token");
-      localStorage.removeItem("refreshToken");
-      toast.success("Logged out successfully")
+      localStorage.clear();
+      toast.success("Logged out successfully");
     },
   },
   extraReducers: (builder) => {
@@ -89,7 +117,7 @@ const authSlice = createSlice({
       .addCase(login.fulfilled, (state, action) => {
         state.isLoggingIn = false;
         state.authUser = action.payload;
-        localStorage.setItem("token", action.payload.access); 
+        localStorage.setItem("token", action.payload.access);
         localStorage.setItem("refreshToken", action.payload.refresh);
       })
       .addCase(login.rejected, (state) => {
@@ -108,6 +136,26 @@ const authSlice = createSlice({
         state.isCheckingAuth = false;
         localStorage.removeItem("token");
         localStorage.removeItem("refreshToken");
+      })
+      .addCase(getProfile.pending, (state) => {
+        state.isProfileLoading = true;
+      })
+      .addCase(getProfile.fulfilled, (state, action) => {
+        state.isProfileLoading = false;
+        state.authUser = action.payload;
+      })
+      .addCase(getProfile.rejected, (state) => {
+        state.isProfileLoading = false;
+      })
+      .addCase(getUsers.pending, (state) => {
+        state.isUsersLoading = true;
+      })
+      .addCase(getUsers.fulfilled, (state, action) => {
+        state.isUsersLoading = false;
+        state.users = action.payload;
+      })
+      .addCase(getUsers.rejected, (state) => {
+        state.isUsersLoading = false;
       });
   },
 });

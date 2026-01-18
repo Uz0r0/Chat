@@ -1,0 +1,24 @@
+services:
+  # Продакшн версия (через Nginx)
+  chat-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: chat_prod
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+
+  # Версия для разработки (с обновлением кода в реальном времени)
+  chat-dev:
+    image: node:20-alpine
+    container_name: chat_dev
+    working_dir: /app
+    volumes:
+      - .:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      - WATCHPACK_POLLING=true
+    command: sh -c "npm install && npm run dev -- --host"
